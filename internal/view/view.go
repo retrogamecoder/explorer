@@ -1,11 +1,12 @@
 package view
 
 import (
-	"sync"
+	"fmt"
 
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/retrogamecoder/explorer/internal/model"
+	"github.com/retrogamecoder/explorer/internal/resources"
 	"golang.org/x/image/colornames"
 )
 
@@ -17,37 +18,25 @@ const (
 	playerSpriteYOffset = 5
 )
 
-// An ImageID is the unique identifier for an image that is loaded from disk.
-type ImageID string
-
 // A View is something that can render a World.
 type View interface {
 	Render(world *model.World, window *pixelgl.Window)
 }
 
-// A ViewConfig is the initialization settings for a View.
+// A ViewConfig is all the settings needed for a View.
 type ViewConfig struct {
-	Images            map[ImageID]string
-	PlayerSpriteImage ImageID
+	Resources         resources.Manager
+	PlayerSpriteImage resources.ImageID
 }
 
 // NewView constructs a default View object based on the config passed.
 func NewView(cfg ViewConfig) (View, error) {
-	images := map[ImageID]pixel.Picture{}
-	var wg sync.WaitGroup
-	wg.Add(len(cfg.Images))
-
-	for imageID, path := range cfg.Images {
-		go func(imageID ImageID, path string) {
-			img, _ := loadImage(path)
-			images[imageID] = img
-			wg.Done()
-		}(imageID, path)
+	img, ok := cfg.Resources.GetImage(cfg.PlayerSpriteImage)
+	if !ok {
+		return nil, fmt.Errorf("PlayerSpriteImage %s does not exist", cfg.PlayerSpriteImage)
 	}
 
-	wg.Wait()
-
-	playerSprite := pixel.NewSprite(images[cfg.PlayerSpriteImage], pixel.R(
+	playerSprite := pixel.NewSprite(img, pixel.R(
 		pixelWidth*playerSpriteXOffset,
 		pixelHeight*playerSpriteYOffset,
 		pixelWidth*(playerSpriteXOffset+1),
@@ -55,13 +44,13 @@ func NewView(cfg ViewConfig) (View, error) {
 	))
 
 	return &view{
-		images,
+		cfg.Resources,
 		playerSprite,
 	}, nil
 }
 
 type view struct {
-	images       map[ImageID]pixel.Picture
+	res          resources.Manager
 	playerSprite *pixel.Sprite
 }
 

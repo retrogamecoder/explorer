@@ -7,6 +7,7 @@ import (
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/retrogamecoder/explorer/internal/controller"
 	"github.com/retrogamecoder/explorer/internal/model"
+	"github.com/retrogamecoder/explorer/internal/resources"
 	"github.com/retrogamecoder/explorer/internal/view"
 )
 
@@ -22,10 +23,17 @@ func run() {
 		log.Fatalf("Could not create window: %s", err)
 	}
 
-	v, err := view.NewView(view.ViewConfig{
-		Images: map[view.ImageID]string{
+	res, err := resources.NewManager(resources.Config{
+		Images: map[resources.ImageID]string{
 			"base": "sprites/sample.png",
 		},
+	})
+	if err != nil {
+		log.Fatalf("Could not load resources: %s", err)
+	}
+
+	v, err := view.NewView(view.ViewConfig{
+		Resources:         res,
 		PlayerSpriteImage: "base",
 	})
 
